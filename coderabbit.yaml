@@ -1,1 +1,9 @@
-language: python + javascript, reviews on every PR
+reviews:
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+  tools:
+    ruff:
+      enabled: true
+    eslint:
+      enabled: true
