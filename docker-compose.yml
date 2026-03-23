@@ -1,0 +1,38 @@
+services:
+  opa:
+    image: openpolicyagent/opa:1.14.1@sha256:d94bd6ac314a57aceeb6dacc3f27bc59f9083b49f365aa79105abb345f94e573
+    command: run --server --watch --log-format=json /policies/policy.rego
+    ports:
+      - "8181:8181"
+    volumes:
+      - ./opa:/policies:ro
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env or environment}
+      - OPA_URL=http://opa:8181
+      - LANGGRAPH_URL=http://langgraph-worker:8001
+    depends_on:
+      - opa
+    volumes:
+      - ./backend:/app
+
+  langgraph-worker:
+    build: ./langgraph-worker
+    ports:
+      - "8001:8001"
+    environment:
+      - OLLAMA_URL=http://host.docker.internal:11434
+    volumes:
+      - ./langgraph-worker:/app
+      - ./chroma_db:/app/chroma_db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

@@ -5,3 +5,5 @@ __pycache__/
 !.env.example
 chroma_db/
 *.pyc
+
+docs/
