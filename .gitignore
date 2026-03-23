@@ -5,5 +5,6 @@ __pycache__/
 !.env.example
 chroma_db/
 *.pyc
+backend/audit_log.jsonl
 
 docs/
