@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
 from app.audit import write_audit_entry
@@ -10,7 +10,6 @@ router = APIRouter()
 class LoginRequest(BaseModel):
     username: str
     password: str
-    role: str  # "developer" or "admin" — used to validate against stored role
 
 
 class TokenResponse(BaseModel):
@@ -24,7 +23,7 @@ def login(request: LoginRequest):
     if not user:
         write_audit_entry(
             user=request.username,
-            role=request.role,
+            role="unknown",
             action="login",
             policy_decision="deny",
         )
@@ -32,19 +31,6 @@ def login(request: LoginRequest):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
             headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Reject if the role in the request doesn't match the stored role
-    if user["role"] != request.role:
-        write_audit_entry(
-            user=request.username,
-            role=request.role,
-            action="login",
-            policy_decision="deny",
-        )
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"User '{request.username}' does not have role '{request.role}'",
         )
 
     token = create_access_token({"sub": user["username"], "role": user["role"]})

@@ -24,13 +24,13 @@ def trigger_workflow(
 ):
     workflow_id = request.workflow_id or f"WF-{uuid.uuid4().hex[:8].upper()}"
 
-    # Write audit entry for the trigger action
     write_audit_entry(
         user=user["sub"],
         role=user["role"],
         action="run_agent",
         policy_decision="allow",
         workflow_id=workflow_id,
+        execution_status="started",
     )
 
     # Call the LangGraph worker
@@ -46,18 +46,46 @@ def trigger_workflow(
         )
         response.raise_for_status()
         result = response.json()
-    except httpx.TimeoutException:
+    except httpx.TimeoutException as err:
+        write_audit_entry(
+            user=user["sub"],
+            role=user["role"],
+            action="run_agent",
+            policy_decision="allow",
+            workflow_id=workflow_id,
+            execution_status="timeout",
+        )
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="LangGraph worker timed out",
+        ) from err
+    except ValueError as err:
+        write_audit_entry(
+            user=user["sub"],
+            role=user["role"],
+            action="run_agent",
+            policy_decision="allow",
+            workflow_id=workflow_id,
+            execution_status="error",
         )
-    except httpx.HTTPError as e:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"LangGraph worker error: {str(e)}",
+            detail="LangGraph worker returned an invalid response",
+        ) from err
+    except httpx.HTTPError as err:
+        write_audit_entry(
+            user=user["sub"],
+            role=user["role"],
+            action="run_agent",
+            policy_decision="allow",
+            workflow_id=workflow_id,
+            execution_status="error",
         )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="LangGraph worker unavailable",
+        ) from err
 
-    # Update audit entry with agent output
     write_audit_entry(
         user=user["sub"],
         role=user["role"],
@@ -65,6 +93,7 @@ def trigger_workflow(
         policy_decision="allow",
         workflow_id=workflow_id,
         agent_output=result.get("verdict", ""),
+        execution_status="success",
     )
 
     return {

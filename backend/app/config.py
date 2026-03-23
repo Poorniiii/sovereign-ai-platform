@@ -1,9 +1,12 @@
 from pathlib import Path
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 # Resolve .env from repo root regardless of where uvicorn is launched from
 _ENV_FILE = Path(__file__).parent.parent.parent / ".env"
+
+_ALLOWED_ALGORITHMS = {"HS256", "HS384", "HS512"}
 
 
 class Settings(BaseSettings):
@@ -15,6 +18,20 @@ class Settings(BaseSettings):
     # Demo user passwords — required, loaded from .env, never hardcoded
     alice_password: str
     bob_password: str
+
+    @model_validator(mode="after")
+    def _validate_jwt_settings(self) -> "Settings":
+        if self.algorithm not in _ALLOWED_ALGORITHMS:
+            raise ValueError(
+                f"algorithm '{self.algorithm}' is not allowed; "
+                f"must be one of {sorted(_ALLOWED_ALGORITHMS)}"
+            )
+        if self.access_token_expire_minutes <= 0:
+            raise ValueError(
+                f"access_token_expire_minutes must be > 0, "
+                f"got {self.access_token_expire_minutes}"
+            )
+        return self
 
     class Config:
         env_file = str(_ENV_FILE)
