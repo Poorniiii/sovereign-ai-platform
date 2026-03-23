@@ -1,7 +1,7 @@
 services:
   opa:
     image: openpolicyagent/opa:1.14.1@sha256:d94bd6ac314a57aceeb6dacc3f27bc59f9083b49f365aa79105abb345f94e573
-    command: run --server --watch --log-format=json /policies/policy.rego
+    command: run --server --addr 0.0.0.0:8181 --watch --log-format=json /policies/policy.rego
     ports:
       - "8181:8181"
     volumes:

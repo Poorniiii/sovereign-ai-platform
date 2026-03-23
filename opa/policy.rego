@@ -1,9 +1,29 @@
 package sovereign
 
-default allow = false
+import rego.v1
 
-# Phase 2 will fill in the three rules
-# Placeholder so the container starts without error
-allow {
+default allow := false
+
+# Rule 1: developers can run agents
+allow if {
+    input.role == "developer"
+    input.action == "run_agent"
+}
+
+# Rule 2: admins can manage policies
+allow if {
     input.role == "admin"
+    input.action == "manage_policy"
+}
+
+# Rule 3: admins can view audit logs
+allow if {
+    input.role == "admin"
+    input.action == "view_audit"
+}
+
+# Rule 4: admins can also run agents
+allow if {
+    input.role == "admin"
+    input.action == "run_agent"
 }

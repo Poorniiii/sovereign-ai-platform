@@ -1,0 +1,3 @@
+{"timestamp": "2026-03-23T15:39:35.114148+00:00", "user": "alice", "role": "developer", "action": "login", "policy_decision": "allow", "workflow_id": "", "agent_output": ""}
+{"timestamp": "2026-03-23T15:40:04.206693+00:00", "user": "bob", "role": "admin", "action": "login", "policy_decision": "allow", "workflow_id": "", "agent_output": ""}
+{"timestamp": "2026-03-23T15:43:37.660340+00:00", "user": "alice", "role": "developer", "action": "login", "policy_decision": "allow", "workflow_id": "", "agent_output": ""}
