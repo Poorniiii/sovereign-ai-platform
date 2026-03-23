@@ -7,3 +7,5 @@ reviews:
       enabled: true
     eslint:
       enabled: true
+  high_level_summary: true
+  poem: false
