@@ -13,7 +13,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# app.include_router(health.router, tags=["Health"])
+app.include_router(health.router, tags=["Health"])
 # Routers below are uncommented progressively as each Phase 2 file is created:
 # app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 # app.include_router(workflow.router, prefix="/workflow", tags=["Workflow"])

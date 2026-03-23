@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   opa:
-    image: openpolicyagent/opa:latest-rootless
+    image: openpolicyagent/opa:1.14.1@sha256:d94bd6ac314a57aceeb6dacc3f27bc59f9083b49f365aa79105abb345f94e573
     command: run --server --watch --log-format=json /policies/policy.rego
     ports:
       - "8181:8181"
@@ -14,7 +12,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - SECRET_KEY=dev-secret-key-change-in-prod
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set in .env or environment}
       - OPA_URL=http://opa:8181
       - LANGGRAPH_URL=http://langgraph-worker:8001
     depends_on:
