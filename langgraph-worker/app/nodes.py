@@ -166,9 +166,18 @@ def _parse_llm_response(text: str) -> tuple[str, float, str]:
         re.IGNORECASE,
     )
     if confidence_match:
-        # Clamp to [0.0, 1.0] in case the LLM returns something like 85 instead of 0.85
         raw_conf = float(confidence_match.group(1))
-        confidence = max(0.0, min(1.0, raw_conf if raw_conf <= 1.0 else raw_conf / 100.0))
+        # Normalise to [0.0, 1.0]:
+        #   <= 1.0        → already a fraction, use as-is  (e.g. 0.85)
+        #   1.0 < x <=100 → LLM returned a percentage, divide by 100 (e.g. 85 → 0.85)
+        #   > 100         → nonsensical value, clamp to 1.0 (e.g. 150 → 1.0)
+        if raw_conf <= 1.0:
+            confidence = raw_conf
+        elif raw_conf <= 100.0:
+            confidence = raw_conf / 100.0
+        else:
+            confidence = 1.0
+        confidence = max(0.0, min(1.0, confidence))  # final safety clamp
     else:
         confidence = 0.0
 

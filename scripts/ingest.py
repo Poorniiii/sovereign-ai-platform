@@ -16,7 +16,7 @@ Usage:
 
 The script:
   1. Reads every .txt, .md, and .pdf file in the source folder
-  2. Splits each file into overlapping 512-character chunks
+  2. Splits each file into overlapping 800-character chunks
   3. Embeds each chunk using Ollama nomic-embed-text
   4. Upserts (insert-or-update) into the sovereign_docs ChromaDB collection
 

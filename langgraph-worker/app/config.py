@@ -57,4 +57,12 @@ CHROMA_COLLECTION: str = os.getenv("CHROMA_COLLECTION", "sovereign_docs")
 # How many document chunks to pull back from ChromaDB for each query.
 # 5 is a good balance: enough context for the LLM, not so much that it
 # gets diluted or exceeds the model's context window.
-TOP_K: int = int(os.getenv("TOP_K", "5"))
+_top_k_raw = os.getenv("TOP_K", "5")
+try:
+    TOP_K: int = int(_top_k_raw)
+except ValueError:
+    import logging as _logging
+    _logging.getLogger(__name__).warning(
+        "TOP_K env var %r is not a valid integer — defaulting to 5", _top_k_raw
+    )
+    TOP_K = 5
