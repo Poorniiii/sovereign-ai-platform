@@ -80,8 +80,9 @@ def validator_node(state: WorkflowState) -> dict:
             "verdict": "UNCERTAIN",
             "confidence": 0.0,
             "answer": (
-                "No relevant policy documents were found in the knowledge base. "
-                "Run the ingest script to load GDPR reference documents before submitting queries."
+                "No retrievable policy context was available for this request, "
+                "so the analysis could not be grounded. "
+                "Please verify the knowledge base is available and try again."
             ),
         }
 
