@@ -1,9 +1,19 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-langgraph==0.2.28
-langchain==0.3.0
+# ── Web server ──────────────────────────────────────────────────────────────
+fastapi==0.115.12        # patched from 0.115.0 — same version as backend
+uvicorn[standard]==0.31.1
+
+# ── LangGraph + LangChain ────────────────────────────────────────────────────
+langgraph==0.2.28        # StateGraph, START, END
+langchain==0.3.0         # base LangChain (ChatOllama inherits from it)
 langchain-community==0.3.0
-langchain-ollama==0.2.0
-chromadb==0.5.5
-pypdf==4.3.1
-python-dotenv==1.0.1
+langchain-ollama==0.2.0  # OllamaEmbeddings + ChatOllama
+
+# ── Vector store ─────────────────────────────────────────────────────────────
+chromadb==0.5.5          # PersistentClient — local disk-based vector DB
+
+# ── Document ingestion ───────────────────────────────────────────────────────
+pypdf==4.3.1             # PDF text extraction for scripts/ingest.py
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+httpx==0.28.0            # HTTP client used inside LangChain Ollama calls
+python-dotenv==1.0.1     # loads .env files (used by local dev runs)
