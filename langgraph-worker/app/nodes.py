@@ -85,7 +85,19 @@ def validator_node(state: WorkflowState) -> dict:
             ),
         }
 
-    context_block = "\n\n".join(chunks)
+    # Guard against None or non-str entries that ChromaDB could return
+    # in edge cases (e.g. a partially-written collection).
+    clean_chunks = [c for c in chunks if isinstance(c, str)]
+    if not clean_chunks:
+        logger.warning(
+            "[validator] all %d chunk(s) were non-string — returning UNCERTAIN", len(chunks)
+        )
+        return {
+            "verdict": "UNCERTAIN",
+            "confidence": 0.0,
+            "answer": "Retrieved chunks contained no readable text — could not generate a verdict.",
+        }
+    context_block = "\n\n".join(clean_chunks)
 
     # ── Build the prompt ───────────────────────────────────────────
     # We use a structured output format (VERDICT / CONFIDENCE / REASONING)
