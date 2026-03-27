@@ -68,10 +68,24 @@ def validator_node(state: WorkflowState) -> dict:
     # If the collection was empty we still proceed — the LLM will answer
     # from its training data and from file_content alone.
     chunks = state["retrieved_chunks"]
-    if chunks:
-        context_block = "\n\n".join(chunks)
-    else:
-        context_block = "No relevant policy documents were found in the knowledge base."
+    if not chunks:
+        # No evidence retrieved — short-circuit without calling the LLM.
+        # Returning UNCERTAIN here is deterministic and honest: we have no
+        # grounding documents so any verdict would be a hallucination.
+        logger.warning(
+            "[validator] no chunks retrieved for workflow %s — returning UNCERTAIN without LLM call",
+            state["workflow_id"],
+        )
+        return {
+            "verdict": "UNCERTAIN",
+            "confidence": 0.0,
+            "answer": (
+                "No relevant policy documents were found in the knowledge base. "
+                "Run the ingest script to load GDPR reference documents before submitting queries."
+            ),
+        }
+
+    context_block = "\n\n".join(chunks)
 
     # ── Build the prompt ───────────────────────────────────────────
     # We use a structured output format (VERDICT / CONFIDENCE / REASONING)
@@ -111,17 +125,56 @@ REASONING: [your explanation in 1-3 sentences]"""
 
     try:
         response = llm.invoke(prompt)
-        raw_text: str = response.content
     except Exception:
         logger.error("[validator] LLM call failed", exc_info=True)
-        # Return safe defaults — the graph continues, returns UNCERTAIN
         return {
             "verdict": "UNCERTAIN",
             "confidence": 0.0,
             "answer": "LLM unavailable — could not generate a verdict.",
         }
 
-    logger.info("[validator] raw LLM output: %.120s...", raw_text)
+    # ── Normalise response.content to a plain string ───────────────
+    # LangChain's BaseMessage.content is typed as str | list[str | dict].
+    # ChatOllama always returns str in practice but we normalise
+    # defensively to avoid a silent TypeError reaching _parse_llm_response.
+    content = response.content
+    if content is None:
+        logger.error(
+            "[validator] response.content is None (type=%s) — returning UNCERTAIN",
+            type(content).__name__,
+        )
+        return {
+            "verdict": "UNCERTAIN",
+            "confidence": 0.0,
+            "answer": "LLM returned an empty response — could not generate a verdict.",
+        }
+    elif isinstance(content, str):
+        raw_text = content
+    elif isinstance(content, list):
+        # Flatten list: join string elements; serialize dicts to key=value pairs
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                parts.append(" ".join(f"{k}={v}" for k, v in item.items()))
+            else:
+                parts.append(str(item))
+        raw_text = " ".join(parts)
+        logger.warning(
+            "[validator] response.content was a list — joined to string: %.120s...", raw_text
+        )
+    else:
+        # Unexpected type — serialize rather than crash
+        raw_text = str(content)
+        logger.warning(
+            "[validator] unexpected response.content type %s — coerced to string",
+            type(content).__name__,
+        )
+
+    # DEBUG only — raw_text may contain PII from the user's contract.
+    # Never log at INFO or above in production.
+    logger.debug("[validator] raw LLM output (%d chars)", len(raw_text))
 
     # ── Parse the response ─────────────────────────────────────────
     verdict, confidence, answer = _parse_llm_response(raw_text)
