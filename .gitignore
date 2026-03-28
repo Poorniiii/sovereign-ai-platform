@@ -7,4 +7,8 @@ chroma_db/
 *.pyc
 backend/audit_log.jsonl
 
-docs/
+# Personal docs — not committed
+docs/*.md
+docs/*-plan.md
+docs/*-explained.md
+# knowledge-base IS committed — it's the RAG source data for scripts/ingest.py
