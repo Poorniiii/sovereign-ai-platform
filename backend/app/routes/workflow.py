@@ -42,7 +42,7 @@ def trigger_workflow(
                 "file_content": request.file_content,
                 "workflow_id": workflow_id,
             },
-            timeout=60.0,
+            timeout=300.0,
         )
         response.raise_for_status()
         result = response.json()
