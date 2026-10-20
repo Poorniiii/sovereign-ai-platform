@@ -106,7 +106,16 @@ def validator_node(state: WorkflowState) -> dict:
     # The three sections are clearly labelled and the user's input is
     # inserted as quoted blocks — this reduces prompt injection risk because
     # the LLM sees them as "data to analyse", not as instructions to follow.
-    contract_text = state["file_content"] or "No contract text was provided."
+    # Truncate to avoid exceeding the LLM's context window.
+    # llama3.1:8b has a ~128k token window but very large files cause it to
+    # run extremely slowly. 8000 chars (~2000 tokens) is enough context to
+    # answer most compliance questions. If the text is longer we note this
+    # in the prompt so the LLM knows it only saw a portion.
+    MAX_FILE_CHARS = 8000
+    if len(state["file_content"]) > MAX_FILE_CHARS:
+        contract_text = state["file_content"][:MAX_FILE_CHARS] + "\n[... document truncated — showing first 8000 characters ...]"
+    else:
+        contract_text = state["file_content"] or "No contract text was provided."
 
     prompt = f"""You are a legal compliance expert specialising in data protection law.
 Analyse the contract text below against the provided policy documents and answer the question.

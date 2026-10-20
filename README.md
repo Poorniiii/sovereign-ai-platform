@@ -249,6 +249,50 @@ Requires Ollama running on the host at port 11434.
 
 ---
 
+## Testing the API Without the UI
+
+All endpoints can be tested directly from PowerShell while the backend is running on port 8000.
+
+### Step 1 — Get a token
+
+As developer (alice):
+
+    $response = Invoke-RestMethod -Uri "http://localhost:8000/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"alice","password":"password123"}'
+    $token = $response.access_token
+
+As admin (bob):
+
+    $adminResponse = Invoke-RestMethod -Uri "http://localhost:8000/auth/login" -Method POST -ContentType "application/json" -Body '{"username":"bob","password":"password123"}'
+    $adminToken = $adminResponse.access_token
+
+### Step 2 — Trigger a workflow with inline text
+
+    $body = '{"query":"What are the data retention rules?","file_content":"This contract states data will be deleted after 30 days."}'
+    Invoke-RestMethod -Uri "http://localhost:8000/workflow/trigger" -Method POST -ContentType "application/json" -Headers @{Authorization="Bearer $token"} -Body $body
+
+### Step 3 — Trigger a workflow with a file
+
+    $fileContent = Get-Content "C:\path\to\your\contract.txt" -Raw
+    $body = @{ query = "Is this GDPR compliant?"; file_content = $fileContent } | ConvertTo-Json -Depth 2
+    Invoke-RestMethod -Uri "http://localhost:8000/workflow/trigger" -Method POST -ContentType "application/json" -Headers @{Authorization="Bearer $token"} -Body $body
+
+### Step 4 — View audit logs (admin only)
+
+    Invoke-RestMethod -Uri "http://localhost:8000/audit/logs?limit=5" -Method GET -Headers @{Authorization="Bearer $adminToken"}
+
+### Step 5 — Health check (no auth needed)
+
+    Invoke-RestMethod -Uri "http://localhost:8000/health"
+
+Expected responses:
+
+- `/auth/login` returns `{ access_token, token_type }`
+- `/workflow/trigger` returns `{ workflow_id, status, result: { verdict, confidence, answer, evidence_chunks } }`
+- `/audit/logs` returns `{ total, limit, offset, items: [...] }`
+- `/health` returns `{ status: "ok" }`
+
+---
+
 ## Knowledge Base
 
 The knowledge base lives in `docs/knowledge-base/` and is ingested into ChromaDB via:
